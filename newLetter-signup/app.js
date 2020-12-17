@@ -23,7 +23,7 @@ app.get('/', function(req,res){
 
 app.post('/',function(req,res){
     var firstName = req.body.firstName;
-    var lastName = req.body.firstName;
+    var lastName = req.body.lasttName;
     var email = req.body.email;
     var data = {
         members:[
@@ -37,6 +37,7 @@ app.post('/',function(req,res){
             }
         ]
     };
+    console.log(data.members[0].merge_fields.LNAME);
 
     var jsonData = JSON.stringify(data);
 
