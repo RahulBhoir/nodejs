@@ -1,5 +1,3 @@
-// api key
-// 293f5c82e14b5c2fe08ebf005897d1eb-us7
 // list id 
 // 05fea25d3f
 const express = require('express');
@@ -44,7 +42,7 @@ app.post('/',function(req,res){
     const url = 'https://us7.api.mailchimp.com/3.0/lists/05fea25d3f';
     const options = {
         method : "POST",
-        auth : 'rahul:293f5c82e14b5c2fe08ebf005897d1eb-us7'
+        auth : 'rahul:' + process.env.MAIL_CHIMP,
     }
     const request = https.request(url, options, function(response){
         if(response.statusCode === 200){
