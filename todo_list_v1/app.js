@@ -1,9 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const date = require(__dirname+'/date.js');
 const app = express();
 
 var newItems = [];
+var workItems = [];
 
 app.set('view engine', 'ejs');
 
@@ -15,21 +16,34 @@ app.listen(3000,function(){
 });
 
 app.get('/',function(req,res){
-    var today = new Date();; 
-    var options = {
-        day:'numeric',
-        weekday: 'short',
-        month: 'long'
-    };
-    var day = today.toLocaleString('en-IN',options);
-    var dict = {
-        day:day,
+    day = date.getDay();
+    let dict = {
+        listTitle:day,
         newItems:newItems,
     };
     res.render('list',dict);
 });
 
 app.post('/',function(req,res){
-    newItems.push(req.body.addItem);
-    res.redirect('/');
+    let item = req.body.addItem;
+    let listName = req.body.list;
+    if(listName === 'Work List'){
+        workItems.push(item);
+        res.redirect('/work');
+    }
+    else{
+        newItems.push(item);
+        res.redirect('/');
+    }
+});
+
+app.get('/work',function(req,res){
+    let dictWork = {
+        listTitle:'Work List',
+        newItems:workItems}
+    res.render('list',dictWork);
+});
+
+app.get('/about',function(req,res){
+    res.render('about');
 });
