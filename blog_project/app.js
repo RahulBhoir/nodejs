@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const _ = require('lodash');
 var blogList = [];
 
 const app = express();
@@ -17,7 +17,7 @@ app.get('/',function(req,res){
 });
 
 app.get('/create',function(req,res){
-    res.render('create_blog');
+    res.render('create_post');
 });
 
 app.post('/',function(req,res){
@@ -30,9 +30,12 @@ app.post('/',function(req,res){
 app.get('/about',function(req, res){
     res.render('about');
 });
+
 app.get('/contact',function(req, res){
     res.render('contact');
 });
-app.post('display',function(req, res){
-    console.log(req.body);
+
+app.get('/post/:postId',function(req, res){
+    let id = req.params.postId;
+    res.render('post',{post:blogList[id]});
 });

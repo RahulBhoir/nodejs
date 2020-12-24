@@ -2,10 +2,8 @@
 
 <% for(let i = 0; i < blogList.length; i++){ %>
     <div class="">
-        <form action="/display" method="POST">
-            <h1><%= blogList[i][0] %></h1>
-            <p class="description"><%= blogList[i][1].slice(0,140) %>...<input type="submit" value="Read more"></p>
-        </form>
+        <h1><%= blogList[i][0] %></h1>
+            <p class="description"><%= blogList[i][1].slice(0,140) %>...<a href="/post/<%= i %>">Read more</a>
     </div>
 <% } %>    
 <%- include('partials/footer') %> 
