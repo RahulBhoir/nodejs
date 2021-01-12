@@ -5,7 +5,10 @@ const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const mongoose = require('mongoose');
 // const encrypt = require('mongoose-encryption');
-const md5 = require('md5');
+// const md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 const app = express();
 
 
@@ -49,11 +52,21 @@ app.route('/login')
     User.findOne({email:username},function(err,foundUser){
         if(!err){
             if(foundUser){
-                if(foundUser.password === md5(password)){
-                    res.render('secrets');
-                }else{
-                    res.send('invalid username or password');
-                }
+                // if(foundUser.password === md5(password)){
+                //     res.render('secrets');
+                // }else{
+                //     res.send('invalid username or password');
+                // }
+                bcrypt.compare(password,foundUser.password,function(err, result){
+                    if(!err){
+                        if(result === true){
+                            res.render('secrets');
+                        }
+                        else{
+                            res.send('invalid username or password');
+                        }
+                    }
+                });
             }
         }else{
             res.render(err);
@@ -70,16 +83,20 @@ app.route('/register')
 })
 
 .post(function(req,res){
-    const user = new User({
-        email: req.body.username,
-        password: md5(req.body.password)
-    });
-
-    user.save(function(err){
-        if(!err){
-            res.render('secrets');
-        }else{
-            res.send(err);
-        }
-    });
+    bcrypt.hash(req.body.password, saltRounds, function(err,hash){
+        const user = new User({
+            email: req.body.username,
+            password: hash
+            // password: md5(req.body.password)
+        });
+    
+        user.save(function(err){
+            if(!err){
+                res.render('secrets');
+            }else{
+                res.send(err);
+            }
+        });
+    })
+    
 });
