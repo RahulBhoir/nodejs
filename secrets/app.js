@@ -41,15 +41,17 @@ mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 
 const userSchema = new mongoose.Schema({
-    email: String,
+    username: { type: String, unique: true }, // values: email address, googleId, facebookId
     password: String,
-    googleId: String,
-    facebookId: String,
+    provider: String, // values: 'local', 'google', 'facebook'
+    email: String,
     secret: String
 });
 
 // this is use to salt and hash our users password
-userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(passportLocalMongoose, {
+    usernameField: "username"
+  });
 userSchema.plugin(findOrCreate);
 
 // process.env.VARIABLE_NAME  to access the env variable
@@ -72,27 +74,42 @@ passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/secrets",
-    userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
+    userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
 },
-function(accessToken, refreshToken, profile, cb) {
-    User.findOrCreate({ googleId: profile.id }, function (err, user) {
-      return cb(err, user);
-    });
-  }
+function (accessToken, refreshToken, profile, cb) {
+    User.findOrCreate(
+      { username: profile.id },
+      {
+        provider: "google",
+        email: profile._json.email
+      },
+      function (err, user) {
+          return cb(err, user);
+      }
+    );
+}
 ));
 
 passport.use(new FacebookStrategy({
     clientID: process.env.FB_ID,
     clientSecret: process.env.FB_SECRET,
-    callbackURL: "http://localhost:3000/auth/facebook/secrets"
-  },
-  function(accessToken, refreshToken, profile, cb) {
-      console.log(profile);
-    User.findOrCreate({ facebookId: profile.id }, function (err, user) {
-      return cb(err, user);
-    });
-  }
+    callbackURL: "http://localhost:3000/auth/facebook/secrets",
+    profileFields: ["id", "email"]
+},
+function (accessToken, refreshToken, profile, cb) {
+    User.findOrCreate(
+      { username: profile.id },
+      {
+        provider: "facebook",
+        email: profile._json.email
+      },
+      function (err, user) {
+        return cb(err, user);
+      }
+    );
+}
 ));
+
 
 app.listen(3000,function(req,res){
     console.log('server started at port 3000');
@@ -140,23 +157,22 @@ app.route('/register')
     res.render('register');
 })
 
-.post(function(req,res){
-    username = req.body.username;
-    password = req.body.password;
-    
+.post(function(req, res) {
+    const username = req.body.username;
+    const password = req.body.password;
+
     // register() is from passportLocalMongoose
-    User.register({username: username}, password, function(err, user){
-        if(!err){
-            // (req, res, function(){}) this callback is only triggered when authentication is successfull 
-            //  and a cookie is set successfully
-            passport.authenticate('local')(req, res, function(){
-                res.redirect('/secrets');
-            });
-        }
-        else{
-            console.log(err);
-            res.redirect('/register');
-        }
+    User.register({ username: username, email: username, provider: 'local' }, password, function(err, user) {
+      if (err) {
+        console.log(err);
+        res.redirect('/register');
+      } else {
+        // (req, res, function(){}) this callback is only triggered when authentication is successfull 
+        //  and a cookie is set successfully
+        passport.authenticate('local')(req, res, function() {
+          res.redirect('/secrets');
+        });
+      }
     });
 });
 
@@ -176,7 +192,7 @@ app.get('/secrets',function(req,res){
 
 //////////////////////////////////////////////login with google/////////////////////////////////////////////
 app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile'] }));
+  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 app.get('/auth/google/secrets', 
 passport.authenticate('google', { failureRedirect: '/login' }),
@@ -188,7 +204,7 @@ res.redirect('/secrets');
 
 //////////////////////////////////////////////login with facebook/////////////////////////////////////////////
 app.get('/auth/facebook',
-  passport.authenticate('facebook'));
+  passport.authenticate('facebook', {scope:['email']}));
 
 app.get('/auth/facebook/secrets',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
